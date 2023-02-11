@@ -277,7 +277,7 @@ export default function Home() {
               ) : (
                 <CheckCircleOutlineIcon className="w-7 h-7  text-teal-500" />
               )}
-              <div className="flex pb-2 gap-2 items-center">
+              <div className="flex pb-[0.2rem] gap-2 items-center">
                 <span className="font-medium">{gameRoom.nickname}&apos;s</span>
                 <span>Game Room</span>
               </div>
