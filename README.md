@@ -35,7 +35,7 @@ Setup and run the project locally on your workstation.
 npm install
 ```
 
-4. Create `.env` file with the following varibles at the root directory of this repo. These values can be found in your Firebase project.
+4. Create `.env` file with the following variables at the root directory of this repo. These values can be found in your Firebase project.
 
 ```text
 NEXT_PUBLIC_FIREBASE_KEY=<KEY>
