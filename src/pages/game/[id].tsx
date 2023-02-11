@@ -1,9 +1,10 @@
 import Circle from '@/components/icons/Circle'
 import X from '@/components/icons/X'
 import Layout from '@/components/Layout'
+import { boxPositionAria, Position } from '@/helpers/constant'
 import { auth, database } from '@/helpers/firebaseConfig'
 import { User } from 'firebase/auth'
-import { get, onChildChanged, query, ref, update } from 'firebase/database'
+import { get, off, onChildChanged, query, ref, update } from 'firebase/database'
 import { useRouter } from 'next/router'
 import { useEffect, useReducer } from 'react'
 
@@ -29,7 +30,6 @@ type Game = {
   playing: boolean
 }
 type BoxSymbol = 'o' | 'x' | undefined
-type Position = 't1' | 't2' | 't3' | 'm1' | 'm2' | 'm3' | 'l1' | 'l2' | 'l3'
 
 type State = {
   player: Player | undefined
@@ -68,14 +68,20 @@ export default function Game() {
   const { player, opponent, game } = state
   const gameRef = query(ref(database, 'games'))
 
-  onChildChanged(gameRef, (snapshot) => {
-    const user = auth.currentUser
-    if (!user || !player || !opponent) return
-    const data = snapshot.val()
-    if (data.user1Id !== player.id && data.user2Id !== player.id) return
-    if (data.user1Id !== opponent.id && data.user2Id !== opponent.id) return
-    parseGame(user, data)
-  })
+  useEffect(() => {
+    onChildChanged(gameRef, (snapshot) => {
+      const user = auth.currentUser
+      if (!user || !player || !opponent) return
+      const data = snapshot.val()
+      if (data.user1Id !== player.id && data.user2Id !== player.id) return
+      if (data.user1Id !== opponent.id && data.user2Id !== opponent.id) return
+      parseGame(user, data)
+    })
+
+    return () => {
+      off(gameRef, 'child_changed')
+    }
+  }, [gameRef, player, opponent])
 
   useEffect(() => {
     const readData = async (user: User) => {
@@ -304,40 +310,83 @@ export default function Game() {
     router.push('/')
   }
 
+  const boxSymbolAria = (position: Position) => {
+    if (!game) return 'Empty box'
+    const positionLabel = boxPositionAria(position)
+    switch (game[position]) {
+      case 'o': {
+        const user =
+          player?.symbol === 'o' ? player?.nickname : opponent?.nickname
+        return `${user} with circle symbol at ${positionLabel} of the board`
+      }
+      case 'x': {
+        const user =
+          player?.symbol === 'x' ? player?.nickname : opponent?.nickname
+        return `${user} with x symbol at ${positionLabel} of the board`
+      }
+      case undefined:
+        return `Empty at ${positionLabel} of the board`
+    }
+  }
+
+  const nameWithSymbolAriaLabel = (user: 'player' | 'opponent') => {
+    if (user === 'player') {
+      return `You with ${player?.symbol === 'o' ? 'circle' : 'x'} symbol`
+    }
+    return `${opponent?.nickname} with ${
+      opponent?.symbol === 'o' ? 'circle' : 'x'
+    } symbol`
+  }
+
   return (
     <Layout>
       <>
-        <div className="flex justify-around items-center mb-4 text-2xl">
-          <div className="flex flex-col items-center">
-            <span className="font-medium">{player?.nickname}</span>
+        <section className="flex justify-around items-center mb-4 text-2xl">
+          <div
+            aria-label={nameWithSymbolAriaLabel('player')}
+            className="flex flex-col items-center"
+          >
+            <h1 className="font-medium">{player?.nickname}</h1>
             {player?.symbol === 'o' ? <Circle width={16} /> : <X width={12} />}
           </div>
           <span> vs. </span>
-          <div className="flex flex-col items-center">
-            <span>{opponent?.nickname}</span>
+          <div
+            aria-label={nameWithSymbolAriaLabel('opponent')}
+            className="flex flex-col items-center"
+          >
+            <h1>{opponent?.nickname}</h1>
             {opponent?.symbol === 'o' ? (
               <Circle width={16} />
             ) : (
               <X width={12} />
             )}
           </div>
-        </div>
-        <span className="text-2xl text-center block mb-5">{turnText()}</span>
-        <div className="flex justify-center mb-5">
-          <section className="grid grid-cols-3 gap-4">
+        </section>
+        <h2 role="status" className="text-2xl text-center block mb-5">
+          {turnText()}
+        </h2>
+
+        <section
+          aria-label="Tic tac toe board"
+          className="flex justify-center mb-5"
+        >
+          <div className="grid grid-cols-3 gap-4">
             <button
+              aria-label={boxSymbolAria('t1')}
               onClick={onBoxClick('t1')}
               className="border rounded-xl flex justify-center border-teal-500 h-20 w-20"
             >
               {showBoxSymbol('t1')}
             </button>
             <button
+              aria-label={boxSymbolAria('t2')}
               onClick={onBoxClick('t2')}
               className="border rounded-xl flex justify-center border-teal-500 h-20 w-20"
             >
               {showBoxSymbol('t2')}
             </button>
             <button
+              aria-label={boxSymbolAria('t3')}
               onClick={onBoxClick('t3')}
               className="border rounded-xl flex justify-center border-teal-500 h-20 w-20"
             >
@@ -345,18 +394,21 @@ export default function Game() {
             </button>
 
             <button
+              aria-label={boxSymbolAria('m1')}
               onClick={onBoxClick('m1')}
               className="border rounded-xl flex justify-center border-teal-500 h-20 w-20"
             >
               {showBoxSymbol('m1')}
             </button>
             <button
+              aria-label={boxSymbolAria('m2')}
               onClick={onBoxClick('m2')}
               className="border rounded-xl flex justify-center border-teal-500 h-20 w-20"
             >
               {showBoxSymbol('m2')}
             </button>
             <button
+              aria-label={boxSymbolAria('m3')}
               onClick={onBoxClick('m3')}
               className="border rounded-xl flex justify-center border-teal-500 h-20 w-20"
             >
@@ -364,25 +416,28 @@ export default function Game() {
             </button>
 
             <button
+              aria-label={boxSymbolAria('l1')}
               onClick={onBoxClick('l1')}
               className="border rounded-xl flex justify-center border-teal-500 h-20 w-20"
             >
               {showBoxSymbol('l1')}
             </button>
             <button
+              aria-label={boxSymbolAria('l2')}
               onClick={onBoxClick('l2')}
               className="border rounded-xl flex justify-center border-teal-500 h-20 w-20"
             >
               {showBoxSymbol('l2')}
             </button>
             <button
+              aria-label={boxSymbolAria('l3')}
               onClick={onBoxClick('l3')}
               className="border rounded-xl flex justify-center border-teal-500 h-20 w-20"
             >
               {showBoxSymbol('l3')}
             </button>
-          </section>
-        </div>
+          </div>
+        </section>
         <button
           type="button"
           onClick={onLeaveClick}

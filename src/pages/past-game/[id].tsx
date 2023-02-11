@@ -1,6 +1,7 @@
 import Circle from '@/components/icons/Circle'
 import X from '@/components/icons/X'
 import Layout from '@/components/Layout'
+import { boxPositionAria, Position } from '@/helpers/constant'
 import { database } from '@/helpers/firebaseConfig'
 import { get, query, ref } from 'firebase/database'
 import { useRouter } from 'next/router'
@@ -26,7 +27,6 @@ type Game = {
 }
 
 type BoxSymbol = 'o' | 'x' | undefined
-type Position = 't1' | 't2' | 't3' | 'm1' | 'm2' | 'm3' | 'l1' | 'l2' | 'l3'
 
 export default function PastGame() {
   const router = useRouter()
@@ -101,11 +101,50 @@ export default function PastGame() {
     }
   }
 
+  const boxSymbolAria = (position: Position) => {
+    if (!game) return 'Empty box'
+    const positionLabel = boxPositionAria(position)
+    switch (game[position]) {
+      case 'o': {
+        const user =
+          game.user1Symbol === 'o' ? game.user1Nickname : game.user2Nickname
+        return `${user} with circle symbol at ${positionLabel} of the board`
+      }
+      case 'x': {
+        const user =
+          game.user1Symbol === 'x' ? game.user1Nickname : game.user2Nickname
+        return `${user} with x symbol at ${positionLabel} of the board`
+      }
+      case undefined:
+        return `Empty at ${positionLabel} of the board`
+    }
+  }
+
+  const nameWithSymbolAriaLabel = (user: 'user1' | 'user2') => {
+    if (!game) return ''
+    if (user === 'user1') {
+      return `${game.user1Nickname} with ${
+        game.user1Symbol === 'o' ? 'circle' : 'x'
+      } symbol`
+    }
+    return `${game.user2Nickname} with ${
+      game.user2Symbol === 'o' ? 'circle' : 'x'
+    } symbol`
+  }
+
   return (
     <Layout>
       <>
-        <div className="flex justify-around items-center mb-4 text-2xl">
-          <div className="flex flex-col items-center">
+        <section
+          aria-label={`Tic Tac Toe game between ${nameWithSymbolAriaLabel(
+            'user1'
+          )} and ${nameWithSymbolAriaLabel('user2')}`}
+          className="flex justify-around items-center mb-4 text-2xl"
+        >
+          <div
+            aria-label={nameWithSymbolAriaLabel('user1')}
+            className="flex flex-col items-center"
+          >
             <span className="font-medium">{game?.user1Nickname}</span>
             {game?.user1Symbol === 'o' ? (
               <Circle width={16} />
@@ -113,8 +152,11 @@ export default function PastGame() {
               <X width={12} />
             )}
           </div>
-          <span> vs. </span>
-          <div className="flex flex-col items-center">
+          <span>vs.</span>
+          <div
+            aria-label={nameWithSymbolAriaLabel('user2')}
+            className="flex flex-col items-center"
+          >
             <span>{game?.user2Nickname}</span>
             {game?.user2Symbol === 'o' ? (
               <Circle width={16} />
@@ -122,41 +164,71 @@ export default function PastGame() {
               <X width={12} />
             )}
           </div>
-        </div>
+        </section>
         <span className="text-2xl text-center block mb-5">{stateText()}</span>
-        <div className="flex justify-center mb-5">
-          <section className="grid grid-cols-3 gap-4">
-            <button className="border rounded-xl flex justify-center border-teal-500 h-20 w-20">
+        <section
+          aria-label="Tic tac toe board"
+          className="flex justify-center mb-5"
+        >
+          <div className="grid grid-cols-3 gap-4">
+            <span
+              aria-label={boxSymbolAria('t1')}
+              className="border rounded-xl flex justify-center border-teal-500 h-20 w-20"
+            >
               {showBoxSymbol('t1')}
-            </button>
-            <button className="border rounded-xl flex justify-center border-teal-500 h-20 w-20">
+            </span>
+            <span
+              aria-label={boxSymbolAria('t2')}
+              className="border rounded-xl flex justify-center border-teal-500 h-20 w-20"
+            >
               {showBoxSymbol('t2')}
-            </button>
-            <button className="border rounded-xl flex justify-center border-teal-500 h-20 w-20">
+            </span>
+            <span
+              aria-label={boxSymbolAria('t3')}
+              className="border rounded-xl flex justify-center border-teal-500 h-20 w-20"
+            >
               {showBoxSymbol('t3')}
-            </button>
+            </span>
 
-            <button className="border rounded-xl flex justify-center border-teal-500 h-20 w-20">
+            <span
+              aria-label={boxSymbolAria('m1')}
+              className="border rounded-xl flex justify-center border-teal-500 h-20 w-20"
+            >
               {showBoxSymbol('m1')}
-            </button>
-            <button className="border rounded-xl flex justify-center border-teal-500 h-20 w-20">
+            </span>
+            <span
+              aria-label={boxSymbolAria('m2')}
+              className="border rounded-xl flex justify-center border-teal-500 h-20 w-20"
+            >
               {showBoxSymbol('m2')}
-            </button>
-            <button className="border rounded-xl flex justify-center border-teal-500 h-20 w-20">
+            </span>
+            <span
+              aria-label={boxSymbolAria('m3')}
+              className="border rounded-xl flex justify-center border-teal-500 h-20 w-20"
+            >
               {showBoxSymbol('m3')}
-            </button>
+            </span>
 
-            <button className="border rounded-xl flex justify-center border-teal-500 h-20 w-20">
+            <span
+              aria-label={boxSymbolAria('l1')}
+              className="border rounded-xl flex justify-center border-teal-500 h-20 w-20"
+            >
               {showBoxSymbol('l1')}
-            </button>
-            <button className="border rounded-xl flex justify-center border-teal-500 h-20 w-20">
+            </span>
+            <span
+              aria-label={boxSymbolAria('l2')}
+              className="border rounded-xl flex justify-center border-teal-500 h-20 w-20"
+            >
               {showBoxSymbol('l2')}
-            </button>
-            <button className="border rounded-xl flex justify-center border-teal-500 h-20 w-20">
+            </span>
+            <span
+              aria-label={boxSymbolAria('l3')}
+              className="border rounded-xl flex justify-center border-teal-500 h-20 w-20"
+            >
               {showBoxSymbol('l3')}
-            </button>
-          </section>
-        </div>
+            </span>
+          </div>
+        </section>
         <button
           type="button"
           onClick={() => router.push('/')}

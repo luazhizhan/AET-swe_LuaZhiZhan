@@ -1,8 +1,24 @@
 import Layout from '@/components/Layout'
 import { auth, database } from '@/helpers/firebaseConfig'
-import { HashtagIcon, TrophyIcon } from '@heroicons/react/24/solid'
+import { CheckCircleIcon as CheckCircleOutlineIcon } from '@heroicons/react/24/outline'
+import {
+  CheckCircleIcon,
+  HashtagIcon,
+  TrophyIcon,
+} from '@heroicons/react/24/solid'
 import { signInAnonymously, updateProfile } from 'firebase/auth'
-import { get, limitToFirst, query, ref, remove, set } from 'firebase/database'
+import {
+  get,
+  limitToFirst,
+  off,
+  onChildAdded,
+  onChildRemoved,
+  query,
+  ref,
+  remove,
+  set,
+} from 'firebase/database'
+import { nanoid } from 'nanoid'
 import { useRouter } from 'next/router'
 import { FormEvent, useEffect, useState } from 'react'
 import CrownIcon from '../components/icons/Crown'
@@ -14,14 +30,52 @@ type Game = {
   state: 'Player1' | 'Player2' | 'Draw' | 'Incomplete'
 }
 
+type GameRoom = {
+  playerId: string
+  nickname: string
+  createdAt: number
+}
+
 export default function Home() {
   const router = useRouter()
   const [nickname, setNickname] = useState('')
   const [loading, setLoading] = useState(false)
   const [pastGames, setPastGames] = useState<Game[]>([])
+  const [gameRooms, setGameRooms] = useState<GameRoom[]>([])
+  const [selectedGameRoom, setSelectedGameRoom] = useState<
+    GameRoom | undefined
+  >(undefined)
+  const waitingRoomRef = query(ref(database, 'waitingRooms'))
 
   useEffect(() => {
-    const readData = async () => {
+    onChildRemoved(waitingRoomRef, (snapshot) => {
+      const gameRoom = snapshot.val()
+      setGameRooms((prev) =>
+        prev.filter((room) => room.playerId !== gameRoom.playerId)
+      )
+      setSelectedGameRoom((prev) => {
+        if (prev?.playerId === gameRoom.playerId) return undefined
+        return prev
+      })
+    })
+
+    onChildAdded(waitingRoomRef, (snapshot) => {
+      const gameRoom = snapshot.val()
+      setGameRooms((prev) => {
+        if (prev.some((room) => room.playerId === gameRoom.playerId))
+          return prev
+        return [...prev, gameRoom]
+      })
+    })
+
+    return () => {
+      off(waitingRoomRef, 'child_removed')
+      off(waitingRoomRef, 'child_added')
+    }
+  }, [selectedGameRoom, gameRooms, waitingRoomRef])
+
+  useEffect(() => {
+    const readPastGamesData = async () => {
       const gameRef = query(ref(database, 'games'), limitToFirst(50))
 
       const snapshot = await get(gameRef)
@@ -49,8 +103,28 @@ export default function Home() {
         setPastGames(formattedData)
       }
     }
-    readData()
-  }, [])
+
+    const readGameRoomsData = async () => {
+      const snapshot = await get(waitingRoomRef)
+      if (snapshot.exists()) {
+        const data = snapshot.val()
+        const formattedData: GameRoom[] = Object.keys(data)
+          .sort((a, b) => data[b].createdAt - data[a].createdAt)
+          .map((playerId) => {
+            const game = data[playerId]
+            return {
+              playerId,
+              nickname: game.nickname,
+              createdAt: game.createdAt,
+            }
+          })
+        setGameRooms(formattedData)
+      }
+    }
+
+    readPastGamesData()
+    readGameRoomsData()
+  }, [waitingRoomRef])
 
   const onPlayClick = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -65,21 +139,65 @@ export default function Home() {
       await updateProfile(user, {
         displayName: nickname,
       })
+
+      if (selectedGameRoom) {
+        const gameId = nanoid(8)
+        await set(ref(database, 'games/' + gameId), {
+          id: gameId,
+          user1Id: user.uid,
+          user1Nickname: nickname,
+          user1Symbol: 'o',
+          user1Status: 'Playing',
+          user2Id: selectedGameRoom.playerId,
+          user2Nickname: selectedGameRoom.nickname,
+          user2Symbol: 'x',
+          user2Status: 'Playing',
+          turn: 'o',
+          createdAt: Date.now(),
+          state: 'Playing',
+          playing: true,
+        })
+        await remove(ref(database, 'waitingRooms/' + selectedGameRoom.playerId))
+        router.push('/game/' + gameId)
+
+        return
+      }
+
       await set(ref(database, 'waitingRooms/' + user.uid), {
         nickname,
+        playerId: user.uid,
         createdAt: Date.now(),
       })
-
       router.push('/finding')
     } catch (error) {
-      alert("Couldn't create a new game. Please try again later.")
+      alert('An error has occur. Please try again later.')
       const user = auth.currentUser
       if (user) {
         await remove(ref(database, 'waitingRooms/' + user.uid))
       }
-    } finally {
       setLoading(false)
     }
+  }
+
+  const pastGameArialLabel = (game: Game) => {
+    const label = `${game.player1} verses ${game.player2}`
+    if (game.state === 'Player1') return `${label} and ${game.player1} won`
+    if (game.state === 'Player2') return `${label} and ${game.player2} won`
+    if (game.state === 'Draw') return `${label} and it was a draw`
+    return `${label} and it was incomplete`
+  }
+
+  const buttonText = () => {
+    if (selectedGameRoom && loading) {
+      return `Joining ${selectedGameRoom.nickname} game...`
+    }
+    if (!selectedGameRoom && loading) {
+      return `Creating a new game...`
+    }
+    if (selectedGameRoom) {
+      return `Join ${selectedGameRoom.nickname} game`
+    }
+    return 'Create a new game'
   }
 
   return (
@@ -96,12 +214,12 @@ export default function Home() {
         <hr className="h-[0.5px] my-2 bg-gray-200 border-0 dark:bg-gray-700" />
 
         {/* Past games */}
-        <div className="mb-3 max-h-40 overflow-auto">
+        <section className="mb-3 max-h-40 overflow-auto">
           {pastGames.map((game) => (
             <button
               key={game.id}
               onClick={() => router.push(`/past-game/${game.id}`)}
-              aria-label={`${game.player1} verses ${game.player2}}`}
+              aria-label={pastGameArialLabel(game)}
               className="flex justify-between items-center mb-2 p-2 text-lg w-full hover:bg-gray-50"
             >
               <div className="flex gap-2 items-center">
@@ -114,13 +232,19 @@ export default function Home() {
                   <CrownIcon height={16} width={16} fill={'#fbbf24'} />
                 )}
                 {game.state === 'Player1' && (
-                  <span className="font-medium">{game.player1}</span>
+                  <span aria-disabled="true" className="font-medium">
+                    {game.player1}
+                  </span>
                 )}
                 {game.state === 'Player2' && (
-                  <span className="font-medium">{game.player2}</span>
+                  <span aria-disabled="true" className="font-medium">
+                    {game.player2}
+                  </span>
                 )}
                 {(game.state === 'Incomplete' || game.state === 'Draw') && (
-                  <span className="font-medium">{game.state}</span>
+                  <span aria-disabled="true" className="font-medium">
+                    {game.state}
+                  </span>
                 )}
               </div>
             </button>
@@ -128,13 +252,38 @@ export default function Home() {
           {pastGames.length === 0 && (
             <p className="text-gray-500">No games found</p>
           )}
-        </div>
+        </section>
 
         <h2 className="font-medium flex text-lg justify-start gap-2 items-center">
           <HashtagIcon className="w-4 h-4 text-teal-400" />
           <span>Find a game</span>
         </h2>
         <hr className="h-[0.5px] my-2 bg-gray-200 border-0 dark:bg-gray-700" />
+        <section className="max-h-40 overflow-auto">
+          {gameRooms.map((gameRoom) => (
+            <button
+              key={gameRoom.playerId}
+              onClick={() =>
+                setSelectedGameRoom((prev) => {
+                  if (prev?.playerId === gameRoom.playerId) return undefined
+                  return gameRoom
+                })
+              }
+              aria-label={`Join ${gameRoom.nickname}'s game`}
+              className="flex gap-2 items-center mb-2 p-2 text-lg w-full hover:bg-gray-50"
+            >
+              {selectedGameRoom?.playerId === gameRoom.playerId ? (
+                <CheckCircleIcon className="w-7 h-7  text-teal-500" />
+              ) : (
+                <CheckCircleOutlineIcon className="w-7 h-7  text-teal-500" />
+              )}
+              <div className="flex pb-2 gap-2 items-center">
+                <span className="font-medium">{gameRoom.nickname}&apos;s</span>
+                <span>Game Room</span>
+              </div>
+            </button>
+          ))}
+        </section>
 
         <form onSubmit={onPlayClick}>
           <div className="mb-2">
@@ -157,12 +306,11 @@ export default function Home() {
             />
           </div>
           <button
-            aria-label="Start playing"
             type="submit"
             disabled={loading}
             className="w-full focus:outline-none text-white bg-teal-500 hover:bg-teal-600 focus:ring-4 focus:ring-teal-300 font-medium rounded-md text-sm px-5 py-2.5 mb-2"
           >
-            {loading ? 'Loading...' : 'Play'}
+            {buttonText()}
           </button>
         </form>
       </>

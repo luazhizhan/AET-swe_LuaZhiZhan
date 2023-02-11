@@ -3,6 +3,7 @@ import { auth, database } from '@/helpers/firebaseConfig'
 import {
   get,
   limitToFirst,
+  off,
   onChildAdded,
   orderByChild,
   query,
@@ -23,19 +24,26 @@ export default function Finding() {
   const router = useRouter()
   const [user, setUser] = useState<User | undefined>(undefined)
   const [loading, setLoading] = useState(false)
-  const gameRef = ref(database, 'games')
 
-  onChildAdded(gameRef, (data) => {
-    const game = data.val()
-    if (user) {
-      if (
-        (game.user1Id === user.playerId || game.user2Id === user.playerId) &&
-        game.playing === true
-      ) {
-        router.push('/game/' + data.key)
+  useEffect(() => {
+    const gameRef = ref(database, 'games')
+    onChildAdded(gameRef, (data) => {
+      const game = data.val()
+      if (user) {
+        if (
+          (game.user1Id === user.playerId || game.user2Id === user.playerId) &&
+          game.playing === true
+        ) {
+          router.push('/game/' + data.key)
+        }
       }
+    })
+
+    return () => {
+      off(gameRef, 'child_added')
     }
-  })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
 
   useEffect(() => {
     const currentUser = auth.currentUser
@@ -63,7 +71,9 @@ export default function Finding() {
         if (data[currentPlayer.playerId]) return
         const opponentId = Object.keys(data)[0]
         const opponent = data[opponentId]
-        await set(ref(database, 'games/' + nanoid(8)), {
+        const gameId = nanoid(8)
+        await set(ref(database, 'games/' + gameId), {
+          id: gameId,
           user1Id: currentPlayer.playerId,
           user1Nickname: currentPlayer.nickname,
           user1Symbol: 'o',
@@ -104,13 +114,13 @@ export default function Finding() {
       <>
         <h1
           id="finding-player"
-          aria-label="Finding a player..."
+          aria-label="Finding a player"
           className="mb-2 text-center text-2xl font-medium tracking-tight"
         >
           Finding player...
         </h1>
         <div
-          aria-labelledby="finding-player"
+          aria-label="loading animation"
           className="animate-bounce mt-14 mb-6 flex justify-center"
         >
           <svg
@@ -214,7 +224,6 @@ export default function Finding() {
         </div>
 
         <button
-          aria-label="Stop finding and go back to home page"
           type="button"
           onClick={onCancelClick}
           disabled={loading}
