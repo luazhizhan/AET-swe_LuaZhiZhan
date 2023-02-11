@@ -1,3 +1,4 @@
+import Layout from '@/components/Layout'
 import { auth, database } from '@/helpers/firebaseConfig'
 import {
   get,
@@ -99,8 +100,8 @@ export default function Finding() {
   if (!user) return <></>
 
   return (
-    <main className="bg-gray-50 p-6 h-screen flex justify-center items-start">
-      <div className="max-w-4xl min-w-[340px] p-4 mt-12 bg-white border border-gray-100 rounded-sm shadow-lg">
+    <Layout>
+      <>
         <h1
           id="finding-player"
           aria-label="Finding a player..."
@@ -221,7 +222,7 @@ export default function Finding() {
         >
           {loading ? 'Cancelling' : 'Cancel'}
         </button>
-      </div>
-    </main>
+      </>
+    </Layout>
   )
 }

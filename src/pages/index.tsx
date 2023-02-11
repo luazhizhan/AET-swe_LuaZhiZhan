@@ -1,10 +1,11 @@
+import Layout from '@/components/Layout'
 import { auth, database } from '@/helpers/firebaseConfig'
 import { HashtagIcon, TrophyIcon } from '@heroicons/react/24/solid'
 import { signInAnonymously, updateProfile } from 'firebase/auth'
 import { get, limitToFirst, query, ref, remove, set } from 'firebase/database'
 import { useRouter } from 'next/router'
 import { FormEvent, useEffect, useState } from 'react'
-import CrownIcon from '../icons/Crown'
+import CrownIcon from '../components/icons/Crown'
 
 type Game = {
   id: string
@@ -82,8 +83,8 @@ export default function Home() {
   }
 
   return (
-    <main className="bg-gray-50 p-6 h-screen flex justify-center items-start">
-      <div className="max-w-4xl min-w-[340px] p-4 mt-12 bg-white border border-gray-100 rounded-sm shadow-lg">
+    <Layout>
+      <>
         <h1 className="mb-2 text-center text-2xl font-bold tracking-tight">
           Tic Tac Toe
         </h1>
@@ -99,6 +100,7 @@ export default function Home() {
           {pastGames.map((game) => (
             <button
               key={game.id}
+              onClick={() => router.push(`/past-game/${game.id}`)}
               aria-label={`${game.player1} verses ${game.player2}}`}
               className="flex justify-between items-center mb-2 p-2 text-lg w-full hover:bg-gray-50"
             >
@@ -163,7 +165,7 @@ export default function Home() {
             {loading ? 'Loading...' : 'Play'}
           </button>
         </form>
-      </div>
-    </main>
+      </>
+    </Layout>
   )
 }

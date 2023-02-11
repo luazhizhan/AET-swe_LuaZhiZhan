@@ -1,6 +1,7 @@
+import Circle from '@/components/icons/Circle'
+import X from '@/components/icons/X'
+import Layout from '@/components/Layout'
 import { auth, database } from '@/helpers/firebaseConfig'
-import Circle from '@/icons/Circle'
-import X from '@/icons/X'
 import { User } from 'firebase/auth'
 import { get, onChildChanged, query, ref, update } from 'firebase/database'
 import { useRouter } from 'next/router'
@@ -303,20 +304,22 @@ export default function Game() {
     router.push('/')
   }
 
-  if (!player || !opponent || !game) return <></>
-
   return (
-    <main className="bg-gray-50 p-6 h-screen flex justify-center items-start">
-      <div className="max-w-4xl min-w-[340px] p-4 mt-12 bg-white border border-gray-100 rounded-sm shadow-lg">
+    <Layout>
+      <>
         <div className="flex justify-around items-center mb-4 text-2xl">
           <div className="flex flex-col items-center">
-            <span className="font-medium">{player.nickname}</span>
-            {player.symbol === 'o' ? <Circle width={16} /> : <X width={12} />}
+            <span className="font-medium">{player?.nickname}</span>
+            {player?.symbol === 'o' ? <Circle width={16} /> : <X width={12} />}
           </div>
           <span> vs. </span>
           <div className="flex flex-col items-center">
-            <span>{opponent.nickname}</span>
-            {opponent.symbol === 'o' ? <Circle width={16} /> : <X width={12} />}
+            <span>{opponent?.nickname}</span>
+            {opponent?.symbol === 'o' ? (
+              <Circle width={16} />
+            ) : (
+              <X width={12} />
+            )}
           </div>
         </div>
         <span className="text-2xl text-center block mb-5">{turnText()}</span>
@@ -387,7 +390,7 @@ export default function Game() {
         >
           Leave Room
         </button>
-      </div>
-    </main>
+      </>
+    </Layout>
   )
 }
