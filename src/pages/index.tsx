@@ -1,15 +1,55 @@
 import { auth, database } from '@/helpers/firebaseConfig'
 import { HashtagIcon, TrophyIcon } from '@heroicons/react/24/solid'
 import { signInAnonymously, updateProfile } from 'firebase/auth'
-import { ref, remove, set } from 'firebase/database'
+import { get, limitToFirst, query, ref, remove, set } from 'firebase/database'
 import { useRouter } from 'next/router'
-import { FormEvent, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import CrownIcon from '../icons/Crown'
+
+type Game = {
+  id: string
+  player1: string
+  player2: string
+  state: 'Player1' | 'Player2' | 'Draw' | 'Incomplete'
+}
 
 export default function Home() {
   const router = useRouter()
   const [nickname, setNickname] = useState('')
   const [loading, setLoading] = useState(false)
+  const [pastGames, setPastGames] = useState<Game[]>([])
+
+  useEffect(() => {
+    const readData = async () => {
+      const gameRef = query(ref(database, 'games'), limitToFirst(50))
+
+      const snapshot = await get(gameRef)
+      if (snapshot.exists()) {
+        const data = snapshot.val()
+        const formattedData: Game[] = Object.keys(data)
+          .filter((id) => data[id].playing === false)
+          .sort((a, b) => data[b].createdAt - data[a].createdAt)
+          .map((id) => {
+            const game = data[id]
+            const state = (() => {
+              if (game.state === 'Incomplete') return 'Incomplete'
+              if (game.state === 'Draw') return 'Draw'
+              if (game[game.state[0]] === game.user1Symbol) return 'Player1'
+              return 'Player2'
+            })()
+
+            return {
+              id,
+              player1: game.user1Nickname,
+              player2: game.user2Nickname,
+              state,
+            }
+          })
+        setPastGames(formattedData)
+      }
+    }
+    readData()
+  }, [])
 
   const onPlayClick = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -52,39 +92,47 @@ export default function Home() {
           <TrophyIcon className="w-4 h-4 text-amber-400" />
           <span>Past Games</span>
         </h2>
-        <hr className="h-px my-2 bg-gray-200 border-0 dark:bg-gray-700" />
+        <hr className="h-[0.5px] my-2 bg-gray-200 border-0 dark:bg-gray-700" />
 
-        <div className="mb-3">
-          <button
-            aria-label="John verses Tim"
-            className="flex mb-2 p-2 gap-2 items-center text-lg w-full hover:bg-gray-50"
-          >
-            <CrownIcon height={16} width={16} fill={'#fbbf24'} />
-            <span className="font-medium">John</span>
-            <span>vs.</span>
-            <span className="font-medium">Tim</span>
-          </button>
-          <button
-            aria-label="Thomas verses Gary"
-            className="flex mb-2 p-2 gap-2 items-center text-lg w-full hover:bg-gray-50"
-          >
-            <CrownIcon height={16} width={16} fill={'#fbbf24'} />
-            <span className="font-medium">Thomas</span>
-            <span>vs.</span>
-            <span className="font-medium">Gary</span>
-          </button>
+        {/* Past games */}
+        <div className="mb-3 max-h-40 overflow-auto">
+          {pastGames.map((game) => (
+            <button
+              key={game.id}
+              aria-label={`${game.player1} verses ${game.player2}}`}
+              className="flex justify-between items-center mb-2 p-2 text-lg w-full hover:bg-gray-50"
+            >
+              <div className="flex gap-2 items-center">
+                <span className="font-medium">{game.player1}</span>
+                <span>vs.</span>
+                <span className="font-medium">{game.player2}</span>
+              </div>
+              <div className="flex gap-2 items-center">
+                {(game.state === 'Player1' || game.state === 'Player2') && (
+                  <CrownIcon height={16} width={16} fill={'#fbbf24'} />
+                )}
+                {game.state === 'Player1' && (
+                  <span className="font-medium">{game.player1}</span>
+                )}
+                {game.state === 'Player2' && (
+                  <span className="font-medium">{game.player2}</span>
+                )}
+                {(game.state === 'Incomplete' || game.state === 'Draw') && (
+                  <span className="font-medium">{game.state}</span>
+                )}
+              </div>
+            </button>
+          ))}
+          {pastGames.length === 0 && (
+            <p className="text-gray-500">No games found</p>
+          )}
         </div>
-
-        {/* list of past games results here
-        <div className="flex justify-center mb-4">
-          <p className="text-gray-500">No games played yet</p>
-        </div> */}
 
         <h2 className="font-medium flex text-lg justify-start gap-2 items-center">
           <HashtagIcon className="w-4 h-4 text-teal-400" />
           <span>Find a game</span>
         </h2>
-        <hr className="h-px my-2 bg-gray-200 border-0 dark:bg-gray-700" />
+        <hr className="h-[0.5px] my-2 bg-gray-200 border-0 dark:bg-gray-700" />
 
         <form onSubmit={onPlayClick}>
           <div className="mb-2">

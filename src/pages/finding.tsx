@@ -29,7 +29,7 @@ export default function Finding() {
     if (user) {
       if (
         (game.user1Id === user.playerId || game.user2Id === user.playerId) &&
-        game.state === 'Playing'
+        game.playing === true
       ) {
         router.push('/game/' + data.key)
       }
@@ -74,6 +74,7 @@ export default function Finding() {
           turn: 'o',
           createdAt: Date.now(),
           state: 'Playing',
+          playing: true,
         })
         await remove(ref(database, 'waitingRooms/' + currentPlayer.playerId))
         await remove(ref(database, 'waitingRooms/' + opponentId))

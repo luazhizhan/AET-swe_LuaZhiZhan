@@ -25,6 +25,7 @@ type Game = {
   l3: BoxSymbol
   turn: 'o' | 'x'
   state: [Position, Position, Position] | 'Draw' | 'Playing' | 'Incomplete'
+  playing: boolean
 }
 type BoxSymbol = 'o' | 'x' | undefined
 type Position = 't1' | 't2' | 't3' | 'm1' | 'm2' | 'm3' | 'l1' | 'l2' | 'l3'
@@ -158,6 +159,7 @@ export default function Game() {
         l3: data.l3,
         turn: data.turn,
         state: data.state,
+        playing: data.playing,
       },
     })
   }
@@ -226,10 +228,14 @@ export default function Game() {
       const winSet = checkWin(updatedGame)
       if (winSet) {
         updatedGame.state = winSet
+        updatedGame.playing = false
         updates['/state'] = winSet
+        updates['/playing'] = false
       } else if (checkDraw(updatedGame)) {
         updatedGame.state = 'Draw'
+        updatedGame.playing = false
         updates['/state'] = 'Draw'
+        updates['/playing'] = false
       }
 
       dispatch({
@@ -291,6 +297,7 @@ export default function Game() {
     if (game?.state === 'Playing') {
       updates['/' + key] = 'Left'
       updates['/state'] = 'Incomplete'
+      updates['/playing'] = false
     }
     await update(ref(database, 'games/' + id), updates)
     router.push('/')
