@@ -3,8 +3,8 @@ import * as React from 'react'
 const Circle = (
   props: JSX.IntrinsicAttributes & React.SVGProps<SVGSVGElement>
 ) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" {...props}>
-    <path d="M512 256c0 141.4-114.6 256-256 256S0 397.4 0 256 114.6 0 256 0s256 114.6 256 256zM256 48C141.1 48 48 141.1 48 256s93.1 208 208 208 208-93.1 208-208S370.9 48 256 48z" />
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" {...props}>
+    <path d="M224 96a160 160 0 1 0 0 320 160 160 0 1 0 0-320zm224 160a224 224 0 1 1-448 0 224 224 0 1 1 448 0z" />
   </svg>
 )
 
