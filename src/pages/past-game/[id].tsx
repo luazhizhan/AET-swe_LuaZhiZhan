@@ -1,8 +1,7 @@
 import Circle from '@/components/icons/Circle'
 import X from '@/components/icons/X'
 import Layout from '@/components/Layout'
-import { auth, database } from '@/helpers/firebaseConfig'
-import { User } from 'firebase/auth'
+import { database } from '@/helpers/firebaseConfig'
 import { get, query, ref } from 'firebase/database'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -35,7 +34,7 @@ export default function PastGame() {
   const [game, setGame] = useState<Game | undefined>()
 
   useEffect(() => {
-    const readData = async (user: User) => {
+    const readData = async () => {
       if (!id || typeof id !== 'string') {
         router.push('/')
         return
@@ -46,10 +45,6 @@ export default function PastGame() {
         return
       }
       const data = snapshot.val()
-      if (data.user1Id !== user.uid && data.user2Id !== user.uid) {
-        router.push('/')
-        return
-      }
       setGame({
         user1Id: data.user1Id,
         user1Nickname: data.user1Nickname,
@@ -69,14 +64,7 @@ export default function PastGame() {
         state: data.state,
       })
     }
-
-    const user = auth.currentUser
-    if (!user) {
-      router.push('/')
-      return
-    }
-    readData(user)
-
+    readData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
