@@ -339,7 +339,7 @@ export default function Game() {
   }
 
   return (
-    <Layout>
+    <Layout title={`${player?.nickname} vs. ${opponent?.nickname}`}>
       <>
         <section className="flex justify-around items-center mb-4 text-2xl">
           <div
@@ -441,7 +441,7 @@ export default function Game() {
         <button
           type="button"
           onClick={onLeaveClick}
-          className="text-teal-500 w-full hover:text-white border border-teal-500 hover:bg-teal-700 focus:ring-4 focus:outline-none focus:ring-teal-300 font-medium rounded-md text-sm px-5 py-2.5 text-center mr-2 mb-2"
+          className="text-teal-800 w-full hover:text-white border border-teal-600 hover:bg-teal-700 focus:ring-4 focus:outline-none focus:ring-teal-300 font-medium rounded-md text-sm px-5 py-2.5 text-center mr-2 mb-2"
         >
           Leave Room
         </button>

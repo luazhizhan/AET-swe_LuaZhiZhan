@@ -201,7 +201,7 @@ export default function Home() {
   }
 
   return (
-    <Layout>
+    <Layout title="Tic Tac Toe">
       <>
         <h1 className="mb-2 text-center text-2xl font-bold tracking-tight">
           Tic Tac Toe
@@ -255,7 +255,7 @@ export default function Home() {
         </section>
 
         <h2 className="font-medium flex text-lg justify-start gap-2 items-center">
-          <HashtagIcon className="w-4 h-4 text-teal-400" />
+          <HashtagIcon className="w-4 h-4 text-teal-700" />
           <span>Find a game</span>
         </h2>
         <hr className="h-[0.5px] my-2 bg-gray-200 border-0 dark:bg-gray-700" />
@@ -308,7 +308,7 @@ export default function Home() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full focus:outline-none text-white bg-teal-500 hover:bg-teal-600 focus:ring-4 focus:ring-teal-300 font-medium rounded-md text-sm px-5 py-2.5 mb-2"
+            className="w-full focus:outline-none text-white bg-teal-700 hover:bg-teal-800 focus:ring-4 focus:ring-teal-300 font-medium rounded-md text-sm px-5 py-2.5 mb-2"
           >
             {buttonText()}
           </button>

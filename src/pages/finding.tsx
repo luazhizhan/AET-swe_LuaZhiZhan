@@ -110,7 +110,7 @@ export default function Finding() {
   if (!user) return <></>
 
   return (
-    <Layout>
+    <Layout title="Finding game...">
       <>
         <h1
           id="finding-player"
@@ -227,7 +227,7 @@ export default function Finding() {
           type="button"
           onClick={onCancelClick}
           disabled={loading}
-          className="text-teal-500 w-full hover:text-white border border-teal-500 hover:bg-teal-700 focus:ring-4 focus:outline-none focus:ring-teal-300 font-medium rounded-md text-sm px-5 py-2.5 text-center mr-2 mb-2"
+          className="text-teal-800 w-full hover:text-white border border-teal-600 hover:bg-teal-700 focus:ring-4 focus:outline-none focus:ring-teal-300 font-medium rounded-md text-sm px-5 py-2.5 text-center mr-2 mb-2"
         >
           {loading ? 'Cancelling' : 'Cancel'}
         </button>
