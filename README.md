@@ -1,8 +1,9 @@
-# AET-swe_LuaZhiZhan
+# multiplayer-tic-tac-toe
+
 
 ## About the project
 
-A realtime multiplayer tic-tac-toe web application that focuses on accessibility for all users.
+A realtime multiplayer tic-tac-toe web application.
 
 ## Getting Started
 
